@@ -3,277 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>دیباگ WebView بله</title>
+    <title>تست postEvent</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f0f0;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 10px 0;
-            width: 100%;
-        }
-        .debug-box {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            margin-top: 20px;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        .method {
-            color: #4ec9b0;
-        }
-        .property {
-            color: #ce9178;
-        }
-        .value {
-            color: #b5cea8;
-        }
-        h3 {
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-        hr {
-            margin: 20px 0;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; padding: 20px; }
+        .container { background: white; border-radius: 20px; padding: 20px; max-width: 600px; margin: 0 auto; }
+        button { padding: 15px; font-size: 16px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 5px; width: 100%; }
+        .debug-box { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; margin-top: 20px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🐞 دیباگ WebView بله</h2>
-        <button onclick="scanWebView()">🔍 اسکن WebView و نمایش متدها</button>
-        <button onclick="testSend()">📤 تست ارسال داده</button>
-        <button onclick="clearLog()">🗑️ پاک کردن لاگ</button>
-        
-        <div class="debug-box" id="debugLog">
-            👈 روی دکمه اسکن کلیک کنید...
-        </div>
+        <h2>🧪 تست postEvent</h2>
+        <button onclick="testFormat1()">📤 فرمت 1: (data)</button>
+        <button onclick="testFormat2()">📤 فرمت 2: ('event', data)</button>
+        <button onclick="testFormat3()">📤 فرمت 3: ('send_data', data)</button>
+        <button onclick="testFormat4()">📤 فرمت 4: ('web_app_data', data)</button>
+        <button onclick="testFormat5()">📤 فرمت 5: (data, callback)</button>
+        <div class="debug-box" id="debugLog">در حال آماده‌سازی...</div>
     </div>
 
     <script>
-        function log(message, type = 'info') {
+        function log(msg, isError = false) {
             const debugDiv = document.getElementById('debugLog');
-            const timestamp = new Date().toLocaleTimeString();
-            const colors = {
-                'info': '#d4d4d4',
-                'success': '#4ec9b0',
-                'error': '#f48771',
-                'warning': '#ce9178'
-            };
-            const color = colors[type] || colors.info;
-            debugDiv.innerHTML += `<div style="color: ${color}; margin-bottom: 5px;">[${timestamp}] ${message}</div>`;
+            const time = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+            debugDiv.innerHTML += `<div class="${className}">[${time}] ${msg}</div>`;
             debugDiv.scrollTop = debugDiv.scrollHeight;
         }
-        
-        function clearLog() {
-            document.getElementById('debugLog').innerHTML = 'لاگ پاک شد...\n';
-        }
-        
-        function scanWebView() {
-            clearLog();
-            log('🔍 شروع اسکن WebView...', 'info');
-            
-            // لیست آبجکت‌های احتمالی
-            const possibleObjects = [
-                { name: 'BaleWebView', obj: window.BaleWebView },
-                { name: 'BaleWebApp', obj: window.BaleWebApp },
-                { name: 'Bale', obj: window.Bale },
-                { name: 'TelegramWebApp', obj: window.TelegramWebApp },
-                { name: 'webkit.messageHandlers', obj: window.webkit?.messageHandlers }
-            ];
-            
-            let foundAny = false;
-            
-            for (const item of possibleObjects) {
-                if (item.obj !== undefined && item.obj !== null) {
-                    foundAny = true;
-                    log(`✅ آبجکت ${item.name} پیدا شد!`, 'success');
-                    
-                    // بررسی نوع آبجکت
-                    log(`   نوع: ${typeof item.obj}`, 'info');
-                    
-                    // لیست کردن کلیدها و متدها
-                    const keys = Object.keys(item.obj);
-                    const methods = [];
-                    const properties = [];
-                    
-                    for (const key of keys) {
-                        const value = item.obj[key];
-                        if (typeof value === 'function') {
-                            methods.push(key);
-                        } else {
-                            properties.push(`${key}: ${typeof value}`);
-                        }
-                    }
-                    
-                    // اضافه کردن prototype methods
-                    let protoMethods = [];
-                    if (item.obj.__proto__) {
-                        const protoKeys = Object.keys(item.obj.__proto__);
-                        for (const key of protoKeys) {
-                            if (typeof item.obj.__proto__[key] === 'function' && key !== 'constructor') {
-                                protoMethods.push(key);
-                            }
-                        }
-                    }
-                    
-                    if (methods.length > 0) {
-                        log(`   📌 متدهای مستقیم (${methods.length}): ${methods.join(', ')}`, 'method');
-                    } else {
-                        log(`   ⚠️ هیچ متد مستقیمی پیدا نشد`, 'warning');
-                    }
-                    
-                    if (protoMethods.length > 0) {
-                        log(`   📌 متدهای پروتوتایپ (${protoMethods.length}): ${protoMethods.join(', ')}`, 'method');
-                    }
-                    
-                    if (properties.length > 0) {
-                        log(`   📌 پراپرتی‌ها (${properties.length}): ${properties.join(', ')}`, 'property');
-                    }
-                    
-                    log(`   📋 تمام کلیدها: ${keys.join(', ')}`, 'info');
-                }
-            }
-            
-            if (!foundAny) {
-                log('❌ هیچ آبجکت WebView شناخته شده‌ای پیدا نشد!', 'error');
-                log('💡 ممکن است این صفحه در WebView بله اجرا نشده باشد.', 'warning');
-            }
-            
-            // بررسی localStorage
-            log(`📦 localStorage: ${localStorage.length} آیتم ذخیره شده`, 'info');
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                log(`   ${key}: ${value?.substring(0, 50)}...`, 'property');
-            }
-            
-            log('✅ اسکن کامل شد!', 'success');
-        }
-        
-        function testSend() {
-            log('📤 تست ارسال داده...', 'info');
-            
-            // خواندن تصویر از localStorage
+
+        function getImageData() {
             const imageData = localStorage.getItem('digit_image');
             if (!imageData) {
-                log('❌ هیچ تصویری در localStorage ذخیره نشده است!', 'error');
-                alert('ابتدا یک رقم بنویسید و تایید کنید.');
-                return;
+                log('❌ تصویری در localStorage یافت نشد! ابتدا یک رقم بنویسید.', true);
+                return null;
             }
-            log('✅ تصویر از localStorage خوانده شد', 'success');
-            
-            const payload = JSON.stringify({
-                type: 'digit_image',
-                data: imageData.substring(0, 100) + '...'  // فقط برای لاگ
-            });
-            log(`📦 Payload: ${payload}`, 'info');
-            
-            // امتحان روش‌های مختلف ارسال
-            let sent = false;
-            
-            // روش 1: BaleWebView.postMessage
-            if (typeof BaleWebView !== 'undefined') {
-                log('📤 روش 1: BaleWebView.postMessage', 'info');
-                if (typeof BaleWebView.postMessage === 'function') {
-                    try {
-                        BaleWebView.postMessage(imageData);
-                        log('✅ ارسال با BaleWebView.postMessage انجام شد!', 'success');
-                        sent = true;
-                    } catch(e) {
-                        log(`❌ خطا در BaleWebView.postMessage: ${e.message}`, 'error');
-                    }
-                } else {
-                    log('⚠️ BaleWebView.postMessage موجود نیست', 'warning');
-                }
-            }
-            
-            // روش 2: BaleWebApp.sendData
-            if (typeof BaleWebApp !== 'undefined') {
-                log('📤 روش 2: BaleWebApp.sendData', 'info');
-                if (typeof BaleWebApp.sendData === 'function') {
-                    try {
-                        BaleWebApp.sendData(imageData);
-                        log('✅ ارسال با BaleWebApp.sendData انجام شد!', 'success');
-                        sent = true;
-                    } catch(e) {
-                        log(`❌ خطا در BaleWebApp.sendData: ${e.message}`, 'error');
-                    }
-                } else {
-                    log('⚠️ BaleWebApp.sendData موجود نیست', 'warning');
-                }
-            }
-            
-            // روش 3: BaleWebApp.postMessage
-            if (typeof BaleWebApp !== 'undefined') {
-                log('📤 روش 3: BaleWebApp.postMessage', 'info');
-                if (typeof BaleWebApp.postMessage === 'function') {
-                    try {
-                        BaleWebApp.postMessage(imageData);
-                        log('✅ ارسال با BaleWebApp.postMessage انجام شد!', 'success');
-                        sent = true;
-                    } catch(e) {
-                        log(`❌ خطا در BaleWebApp.postMessage: ${e.message}`, 'error');
-                    }
-                } else {
-                    log('⚠️ BaleWebApp.postMessage موجود نیست', 'warning');
-                }
-            }
-            
-            // روش 4: Bale.webView.sendData
-            if (typeof Bale !== 'undefined' && Bale.webView) {
-                log('📤 روش 4: Bale.webView.sendData', 'info');
-                if (typeof Bale.webView.sendData === 'function') {
-                    try {
-                        Bale.webView.sendData(imageData);
-                        log('✅ ارسال با Bale.webView.sendData انجام شد!', 'success');
-                        sent = true;
-                    } catch(e) {
-                        log(`❌ خطا در Bale.webView.sendData: ${e.message}`, 'error');
-                    }
-                } else {
-                    log('⚠️ Bale.webView.sendData موجود نیست', 'warning');
-                }
-            }
-            
-            if (!sent) {
-                log('❌ هیچ روش ارسالی کار نکرد!', 'error');
-                log('💡 ممکن است WebView بله از متد دیگری استفاده کند.', 'warning');
-            }
-            
-            log('🏁 تست ارسال به پایان رسید.', 'info');
+            log('✅ تصویر از localStorage خوانده شد');
+            return imageData;
         }
-        
-        // اجرای خودکار اسکن هنگام بارگذاری صفحه
+
+        function sendWithPostEvent(methodName, arg1, arg2 = null) {
+            try {
+                log(`📤 تلاش: ${methodName}(${JSON.stringify(arg1).substring(0, 50)}...)`);
+                if (arg2 !== null) {
+                    BaleWebApp.postEvent(arg1, arg2);
+                } else {
+                    BaleWebApp.postEvent(arg1);
+                }
+                log(`✅ ${methodName} اجرا شد - بدون خطا`, false);
+                return true;
+            } catch(e) {
+                log(`❌ ${methodName} خطا: ${e.message}`, true);
+                return false;
+            }
+        }
+
+        function testFormat1() {
+            log('=== تست فرمت 1: فقط داده ===');
+            const imageData = getImageData();
+            if (!imageData) return;
+            sendWithPostEvent('فرمت 1', imageData);
+        }
+
+        function testFormat2() {
+            log('=== تست فرمت 2: رویداد + داده ===');
+            const imageData = getImageData();
+            if (!imageData) return;
+            sendWithPostEvent('فرمت 2', 'digit_image', imageData);
+        }
+
+        function testFormat3() {
+            log('=== تست فرمت 3: send_data + داده ===');
+            const imageData = getImageData();
+            if (!imageData) return;
+            sendWithPostEvent('فرمت 3', 'send_data', imageData);
+        }
+
+        function testFormat4() {
+            log('=== تست فرمت 4: web_app_data + داده ===');
+            const imageData = getImageData();
+            if (!imageData) return;
+            sendWithPostEvent('فرمت 4', 'web_app_data', imageData);
+        }
+
+        function testFormat5() {
+            log('=== تست فرمت 5: داده + تابع برگشتی ===');
+            const imageData = getImageData();
+            if (!imageData) return;
+            try {
+                BaleWebApp.postEvent(imageData, function(response) {
+                    log(`پاسخ از WebView: ${JSON.stringify(response)}`);
+                });
+                log('✅ فرمت 5 اجرا شد');
+            } catch(e) {
+                log(`❌ فرمت 5 خطا: ${e.message}`, true);
+            }
+        }
+
+        // نمایش وضعیت اولیه
         window.onload = function() {
-            log('صفحه بارگذاری شد. در حال اسکن خودکار...', 'info');
-            setTimeout(() => {
-                scanWebView();
-            }, 500);
+            log('🔍 صفحه دیباگ loaded');
+            if (typeof BaleWebApp !== 'undefined') {
+                log('✅ BaleWebApp پیدا شد');
+                log(`📋 متدهای موجود: postEvent`);
+            } else {
+                log('❌ BaleWebApp پیدا نشد!', true);
+            }
+            
+            const imageData = localStorage.getItem('digit_image');
+            if (imageData) {
+                log('✅ تصویر در localStorage وجود دارد');
+            } else {
+                log('⚠️ تصویری در localStorage یافت نشد. ابتدا یک رقم بنویسید.', true);
+            }
         };
     </script>
 </body>
