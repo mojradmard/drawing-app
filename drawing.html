@@ -183,19 +183,24 @@
             return tempCanvas.toDataURL('image/png');
         }
         
+// ... (بقیه توابع مانند startDrawing, draw, clearCanvas به همان صورت باقی می‌مانند) ...
+
         function submitDrawing() {
             const imageData = resizeCanvasImage();
-            
-            // ارسال داده به بله (از طریق WebView)
-            if (window.TelegramWebApp) {
-                window.TelegramWebApp.sendData(JSON.stringify({
+        
+            // بررسی اینکه آیا در محیط WebView بله هستیم
+            if (typeof BaleWebApp !== 'undefined') {
+                // ارسال داده به ربات بله با استفاده از BaleWebApp
+                BaleWebApp.sendData(JSON.stringify({
                     type: 'digit_image',
                     data: imageData
                 }));
-                window.TelegramWebApp.close();
+                // بستن خودکار WebView (اختیاری)
+                BaleWebApp.close();
             } else {
-                // اگر در محیط WebView نیست، نمایش پیام
-                alert('لطفاً از داخل ربات بله استفاده کنید');
+                // اگر در محیط تست (مرورگر معمولی) هستید
+                alert('لطفاً از داخل ربات بله استفاده کنید. داده آماده ارسال است:\n' + imageData.substring(0, 100) + '...');
+                console.log('Data to send:', imageData);
             }
         }
         
