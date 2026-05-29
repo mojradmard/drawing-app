@@ -187,19 +187,31 @@
 
         function submitDrawing() {
             const imageData = resizeCanvasImage();
-        
+            
             // بررسی اینکه آیا در محیط WebView بله هستیم
-            if (typeof BaleWebApp !== 'undefined') {
-                // ارسال داده به ربات بله با استفاده از BaleWebApp
-                BaleWebApp.sendData(JSON.stringify({
-                    type: 'digit_image',
-                    data: imageData
-                }));
-                // بستن خودکار WebView (اختیاری)
-                BaleWebApp.close();
+            if (typeof BaleWebApp !== 'undefined' && BaleWebApp) {
+                try {
+                    // ارسال داده به ربات بله
+                    BaleWebApp.sendData(JSON.stringify({
+                        type: 'digit_image',
+                        data: imageData
+                    }));
+                    
+                    // بستن WebView بعد از ارسال داده
+                    // ممکن است نیاز به تاخیر جزئی باشد تا داده حتماً ارسال شود
+                    setTimeout(function() {
+                        if (typeof BaleWebApp.close === 'function') {
+                            BaleWebApp.close();
+                        }
+                    }, 100);
+                    
+                } catch(e) {
+                    console.error('خطا در ارسال داده:', e);
+                    alert('خطا در ارسال رقم. لطفاً دوباره تلاش کنید.');
+                }
             } else {
-                // اگر در محیط تست (مرورگر معمولی) هستید
-                alert('لطفاً از داخل ربات بله استفاده کنید. داده آماده ارسال است:\n' + imageData.substring(0, 100) + '...');
+                // اگر در محیط تست (مرورگر معمولی) هستیم
+                alert('لطفاً از داخل ربات بله استفاده کنید. داده آماده ارسال است');
                 console.log('Data to send:', imageData);
             }
         }
