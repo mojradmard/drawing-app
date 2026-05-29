@@ -185,6 +185,23 @@
         
 // ... (بقیه توابع مانند startDrawing, draw, clearCanvas به همان صورت باقی می‌مانند) ...
 
+                // بررسی و نمایش وضعیت WebView هنگام بارگذاری صفحه
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('=== بررسی WebView بله ===');
+            console.log('typeof Bale:', typeof Bale);
+            console.log('typeof Bale.webView:', typeof (Bale && Bale.webView));
+            console.log('typeof BaleWebApp:', typeof BaleWebApp);
+            console.log('typeof window.TelegramWebApp:', typeof window.TelegramWebApp);
+            
+            if (typeof Bale !== 'undefined' && Bale.webView) {
+                console.log('✅ WebView بله شناسایی شد (روش اول)');
+            } else if (typeof BaleWebApp !== 'undefined') {
+                console.log('✅ WebView بله شناسایی شد (روش دوم)');
+            } else {
+                console.log('⚠️ هیچ WebView ای شناسایی نشد!');
+            }
+        });
+        
         function submitDrawing() {
             const imageData = resizeCanvasImage();
             
