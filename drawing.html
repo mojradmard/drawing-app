@@ -233,7 +233,7 @@
         function submitDrawing() {
             const imageData = resizeCanvasImage();
             
-            // پیدا کردن WebView (همان روش قبلی)
+            // پیدا کردن WebView
             let webview = null;
             if (typeof BaleWebApp !== 'undefined') webview = BaleWebApp;
             else if (typeof BaleWebView !== 'undefined') webview = BaleWebView;
@@ -243,32 +243,41 @@
             else if (window.BaleWebView) webview = window.BaleWebView;
             else if (window.Bale) webview = window.Bale;
             
-            if (webview) {
-                // نمایش تمام متدها و پراپرتی‌های موجود در webview
-                const methods = [];
-                const properties = [];
-                
-                for (let key in webview) {
-                    if (typeof webview[key] === 'function') {
-                        methods.push(key);
-                    } else {
-                        properties.push(key + ': ' + typeof webview[key]);
-                    }
+            if (webview && typeof webview.postEvent === 'function') {
+                try {
+                    // امتحان فرمت‌های مختلف (یکی یکی کامنت کن)
+                    
+                    // فرمت 1
+                    webview.postEvent('send_data', {
+                        type: 'digit_image',
+                        data: imageData
+                    });
+                    
+                    // فرمت 2 (این خط را امتحان کن، بقیه را کامنت کن)
+                    // webview.postEvent(JSON.stringify({
+                    //     type: 'digit_image',
+                    //     data: imageData
+                    // }));
+                    
+                    // فرمت 3
+                    // webview.postEvent(imageData);
+                    
+                    // فرمت 4
+                    // webview.postEvent('web_app_data', { data: imageData });
+                    
+                    alert('داده ارسال شد! صفحه در حال بسته شدن...');
+                    
+                    setTimeout(function() {
+                        if (typeof webview.close === 'function') {
+                            webview.close();
+                        }
+                    }, 300);
+                    
+                } catch(e) {
+                    alert('خطا: ' + e.message);
                 }
-                
-                // نمایش در قالب alert (چون کنسول可能在 WebView در دسترس نباشد)
-                alert('متدهای موجود: ' + (methods.length > 0 ? methods.join(', ') : 'هیچ متدی پیدا نشد\n\n') + 
-                      '\n\nپراپرتی‌ها:\n' + properties.join('\n'));
-                
-                // اگر متدی به نام sendData وجود نداشت، سعی می‌کنیم close را صدا بزنیم
-                if (typeof webview.close === 'function') {
-                    setTimeout(() => {
-                        webview.close();
-                    }, 3000);
-                }
-                
             } else {
-                alert('WebView پیدا نشد');
+                alert('متد postEvent یافت نشد');
             }
         }
         
