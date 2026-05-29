@@ -185,91 +185,100 @@
         
 // ... (بقیه توابع مانند startDrawing, draw, clearCanvas به همان صورت باقی می‌مانند) ...
 
-                // بررسی و نمایش وضعیت WebView هنگام بارگذاری صفحه
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('=== بررسی WebView بله ===');
-            console.log('typeof Bale:', typeof Bale);
-            console.log('typeof Bale.webView:', typeof (Bale && Bale.webView));
-            console.log('typeof BaleWebApp:', typeof BaleWebApp);
-            console.log('typeof window.TelegramWebApp:', typeof window.TelegramWebApp);
+// تابع برای شناسایی آبجکت WebView در بله
+        function findBaleWebView() {
+            // لیست نام‌های احتمالی برای WebView در بله
+            const possibleNames = [
+                'BaleWebView',
+                'BaleWebApp', 
+                'Bale',
+                'window.BaleWebView',
+                'webkit.messageHandlers',  // برای iOS
+                'BaleAndroid',             // برای Android
+                'BaleiOS'                  // برای iOS
+            ];
             
-            if (typeof Bale !== 'undefined' && Bale.webView) {
-                console.log('✅ WebView بله شناسایی شد (روش اول)');
-            } else if (typeof BaleWebApp !== 'undefined') {
-                console.log('✅ WebView بله شناسایی شد (روش دوم)');
+            // بررسی آبجکت‌های سراسری
+            if (typeof BaleWebApp !== 'undefined') return BaleWebApp;
+            if (typeof BaleWebView !== 'undefined') return BaleWebView;
+            if (typeof Bale !== 'undefined' && Bale.webView) return Bale.webView;
+            if (typeof Bale !== 'undefined') return Bale;
+            
+            // بررسی window
+            if (window.BaleWebApp) return window.BaleWebApp;
+            if (window.BaleWebView) return window.BaleWebView;
+            if (window.Bale) return window.Bale;
+            
+            // بررسی messageHandlers (برای WebViewهای iOS)
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.baleWebView) {
+                return window.webkit.messageHandlers.baleWebView;
+            }
+            
+            return null;
+        }
+
+        // نمایش وضعیت برای دیباگ
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('=== جستجوی WebView بله ===');
+            const webview = findBaleWebView();
+            if (webview) {
+                console.log('✅ WebView پیدا شد:', typeof webview);
+                console.log('متدهای موجود:', Object.keys(webview));
             } else {
-                console.log('⚠️ هیچ WebView ای شناسایی نشد!');
+                console.log('❌ WebView پیدا نشد');
+                console.log('تمام آبجکت‌های سراسری:', Object.keys(window));
             }
         });
-        
+                
         function submitDrawing() {
             const imageData = resizeCanvasImage();
             
-            // بررسی روش‌های مختلف ارسال داده در بله
-            if (typeof Bale !== 'undefined' && Bale.webView) {
-                // روش اول: استفاده از Bale.webView
+            // پیدا کردن WebView
+            const webview = findBaleWebView();
+            
+            if (webview) {
                 try {
-                    Bale.webView.sendData(JSON.stringify({
-                        type: 'digit_image',
-                        data: imageData
-                    }));
-                    Bale.webView.close();
-                } catch(e) {
-                    console.error('خطا در ارسال با Bale.webView:', e);
-                    fallbackSubmit(imageData);
-                }
-            } 
-            else if (typeof BaleWebApp !== 'undefined') {
-                // روش دوم: استفاده از BaleWebApp (اگر وجود داشته باشد)
-                try {
-                    BaleWebApp.sendData(JSON.stringify({
-                        type: 'digit_image',
-                        data: imageData
-                    }));
-                    if (typeof BaleWebApp.close === 'function') {
-                        BaleWebApp.close();
+                    // نمایش متدهای موجود برای دیباگ
+                    console.log('متدهای webview:', Object.keys(webview));
+                    
+                    // روش‌های مختلف ارسال داده
+                    if (typeof webview.sendData === 'function') {
+                        webview.sendData(imageData);
+                    } 
+                    else if (typeof webview.postMessage === 'function') {
+                        webview.postMessage(imageData);
                     }
+                    else if (typeof webview.send === 'function') {
+                        webview.send(imageData);
+                    }
+                    else if (webview.webView && typeof webview.webView.sendData === 'function') {
+                        webview.webView.sendData(imageData);
+                    }
+                    else {
+                        // اگر متد ارسال داده پیدا نشد
+                        console.error('هیچ متد ارسال داده‌ای پیدا نشد');
+                        alert('خطا: WebView پیدا شد اما متد ارسال داده وجود ندارد');
+                        return;
+                    }
+                    
+                    // تلاش برای بستن WebView
+                    setTimeout(() => {
+                        if (typeof webview.close === 'function') {
+                            webview.close();
+                        } else if (typeof webview.backButton === 'function') {
+                            webview.backButton();
+                        } else if (window.history.length > 1) {
+                            window.history.back();
+                        }
+                    }, 300);
+                    
                 } catch(e) {
-                    console.error('خطا در ارسال با BaleWebApp:', e);
-                    fallbackSubmit(imageData);
+                    console.error('خطا در ارسال:', e);
+                    alert('خطا در ارسال رقم: ' + e.message);
                 }
-            }
-            else if (typeof window.BaleWebApp !== 'undefined') {
-                // روش سوم: برای تلگرام (فال‌بک)
-                try {
-                    window.BaleWebApp.sendData(JSON.stringify({
-                        type: 'digit_image',
-                        data: imageData
-                    }));
-                    window.BaleWebApp.close();
-                } catch(e) {
-                    console.error('خطا در ارسال با BaleWebApp:', e);
-                    fallbackSubmit(imageData);
-                }
-            }
-            else {
-                // اگر هیچکدام وجود نداشت
-                fallbackSubmit(imageData);
-            }
-        }
-        
-        function fallbackSubmit(imageData) {
-            // روش جایگزین: ذخیره داده در localStorage و دادن لینک به کاربر
-            try {
-                localStorage.setItem('pending_digit_image', imageData);
-                alert('تصویر ذخیره شد. لطفاً به ربات برگردید و دکمه "تایید" را بزنید.');
-                
-                // تلاش برای بستن با روش‌های مختلف
-                if (typeof Bale !== 'undefined' && Bale.webView && typeof Bale.webView.close === 'function') {
-                    Bale.webView.close();
-                } else if (typeof BaleWebApp !== 'undefined' && typeof BaleWebApp.close === 'function') {
-                    BaleWebApp.close();
-                } else if (typeof window.close === 'function') {
-                    window.close();
-                }
-            } catch(e) {
-                console.error('خطا در fallback:', e);
-                alert('خطا در ارسال رقم. لطفاً از تصویر ذخیره شده استفاده کنید.');
+            } else {
+                // اگر WebView پیدا نشد
+                alert('محیط WebView شناسایی نشد. لطفاً از طریق ربات بله وارد شوید.');
             }
         }
         
