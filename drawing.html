@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>نوشتن رقم دستنویس</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .canvas-container {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: inline-block;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            cursor: crosshair;
+            touch-action: none;
+            background: white;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .clear-btn {
+            background: #ff4757;
+            color: white;
+        }
+        .clear-btn:hover {
+            background: #ff3838;
+            transform: translateY(-2px);
+        }
+        .submit-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        .submit-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        .info {
+            color: #666;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>✍️ رقم خود را بنویسید</h2>
+        <div class="canvas-container">
+            <canvas id="drawingCanvas" width="280" height="280" style="width:280px;height:280px"></canvas>
+        </div>
+        <div class="buttons">
+            <button class="clear-btn" onclick="clearCanvas()">🗑️ پاک کردن</button>
+            <button class="submit-btn" onclick="submitDrawing()">✅ تایید و ارسال</button>
+        </div>
+        <div class="info">
+            رقم ۰ تا ۹ را به صورت پررنگ و درشت بنویسید
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        
+        // تنظیمات اولیه قلم
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 20;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // توابع نقاشی
+        function startDrawing(e) {
+            drawing = true;
+            const pos = getCoordinates(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+        
+        function draw(e) {
+            if (!drawing) return;
+            e.preventDefault();
+            const pos = getCoordinates(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+        
+        function stopDrawing() {
+            drawing = false;
+            ctx.beginPath();
+        }
+        
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            let clientX, clientY;
+            
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            let x = (clientX - rect.left) * scaleX;
+            let y = (clientY - rect.top) * scaleY;
+            
+            x = Math.max(0, Math.min(canvas.width, x));
+            y = Math.max(0, Math.min(canvas.height, y));
+            
+            return { x, y };
+        }
+        
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function resizeCanvasImage() {
+            // تبدیل تصویر به سایز 28x28 برای MNIST
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // کپی تصویر اصلی به سایز 28x28
+            tempCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, 28, 28);
+            
+            // تبدیل به داده Base64
+            return tempCanvas.toDataURL('image/png');
+        }
+        
+        function submitDrawing() {
+            const imageData = resizeCanvasImage();
+            
+            // ارسال داده به بله (از طریق WebView)
+            if (window.TelegramWebApp) {
+                window.TelegramWebApp.sendData(JSON.stringify({
+                    type: 'digit_image',
+                    data: imageData
+                }));
+                window.TelegramWebApp.close();
+            } else {
+                // اگر در محیط WebView نیست، نمایش پیام
+                alert('لطفاً از داخل ربات بله استفاده کنید');
+            }
+        }
+        
+        // رویدادهای ماوس
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+        
+        // رویدادهای لمسی
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing);
+        
+        // جلوگیری از اسکرول صفحه هنگام نقاشی
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>
