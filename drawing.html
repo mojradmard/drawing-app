@@ -240,19 +240,49 @@
             // نمایش پیام به کاربر
             alert('✅ تصویر رقم ذخیره شد!\n\nلطفاً به ربات برگردید و روی دکمه "دریافت تصویر" کلیک کنید.');
             
-            // بستن WebView
+            // بستن WebView و برگشت به ربات
             try {
-                if (typeof BaleWebApp !== 'undefined' && typeof BaleWebApp.close === 'function') {
-                    BaleWebApp.close();
-                } else if (typeof BaleWebView !== 'undefined' && typeof BaleWebView.close === 'function') {
-                    BaleWebView.close();
-                } else if (window.history.length > 1) {
-                    window.history.back();
+                // روش اول: متد close استاندارد
+                if (typeof BaleWebApp !== 'undefined') {
+                    if (typeof BaleWebApp.close === 'function') {
+                        BaleWebApp.close();
+                        return;
+                    }
                 }
+                
+                // روش دوم: برای بله (Bale)
+                if (typeof Bale !== 'undefined') {
+                    if (typeof Bale.close === 'function') {
+                        Bale.close();
+                        return;
+                    }
+                    if (typeof Bale.webView !== 'undefined' && typeof Bale.webView.close === 'function') {
+                        Bale.webView.close();
+                        return;
+                    }
+                }
+                
+                // روش سوم: استفاده از history.back
+                if (window.history.length > 1) {
+                    window.history.back();
+                    return;
+                }
+                
+                // روش چهارم: بستن پنجره با جاوااسکریپت معمولی
+                if (typeof window.close === 'function') {
+                    window.close();
+                    return;
+                }
+                
+                // روش پنجم: اگر هیچکدام کار نکرد، به کاربر بگو دستی ببندد
+                alert('لطفاً صفحه را به صورت دستی ببندید.');
+                
             } catch(e) {
-                console.log('خطا در بستن:', e);
+                console.log('خطا در بستن پنجره:', e);
+                alert('لطفاً صفحه را به صورت دستی ببندید.');
             }
-        }        
+        }
+        
         // رویدادهای ماوس
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
