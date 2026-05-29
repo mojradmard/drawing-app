@@ -48,7 +48,6 @@
                 return;
             }
 
-            // تبدیل base64 به blob
             fetch(imageData)
                 .then(res => res.blob())
                 .then(blob => {
@@ -57,7 +56,6 @@
                     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                         navigator.share({
                             title: 'رقم دستنویس',
-                            text: 'رقمی که نوشتم',
                             files: [file]
                         }).then(() => {
                             document.getElementById('status').innerHTML = '✅ تصویر ارسال شد! لطفاً آن را در چت ربات انتخاب کنید.';
@@ -67,7 +65,6 @@
                             }
                         });
                     } else {
-                        // اگر اشتراک‌گذاری فایل پشتیبانی نمی‌شود، دانلود خودکار
                         downloadImage();
                     }
                 });
