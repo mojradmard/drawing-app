@@ -3,121 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>تست postEvent</title>
+    <title>دریافت تصویر</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; padding: 20px; }
-        .container { background: white; border-radius: 20px; padding: 20px; max-width: 600px; margin: 0 auto; }
-        button { padding: 15px; font-size: 16px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 5px; width: 100%; }
-        .debug-box { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; margin-top: 20px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
-        .success { color: #4ec9b0; }
-        .error { color: #f48771; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; margin: 0; }
+        .container { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 20px; text-align: center; max-width: 400px; width: 100%; }
+        button { padding: 15px 30px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px; width: 80%; }
+        .share-btn { background: #2196F3; }
+        .preview { margin-top: 20px; max-width: 100%; }
+        img { max-width: 200px; border: 1px solid #ddd; border-radius: 8px; }
+        .status { margin-top: 10px; padding: 10px; background: #e0e0e0; border-radius: 8px; font-size: 12px; }
+        .note { margin-top: 15px; font-size: 12px; color: #666; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🧪 تست postEvent</h2>
-        <button onclick="testFormat1()">📤 فرمت 1: (data)</button>
-        <button onclick="testFormat2()">📤 فرمت 2: ('event', data)</button>
-        <button onclick="testFormat3()">📤 فرمت 3: ('send_data', data)</button>
-        <button onclick="testFormat4()">📤 فرمت 4: ('web_app_data', data)</button>
-        <button onclick="testFormat5()">📤 فرمت 5: (data, callback)</button>
-        <div class="debug-box" id="debugLog">در حال آماده‌سازی...</div>
+        <h2>📥 دریافت تصویر ذخیره شده</h2>
+        <button onclick="shareImage()" class="share-btn">📤 اشتراک‌گذاری تصویر</button>
+        <button onclick="downloadImage()">💾 دانلود تصویر</button>
+        <div class="preview" id="preview"></div>
+        <div class="status" id="status">در انتظار اقدام شما...</div>
+        <div class="note">
+            💡 روش کار:<br>
+            1. روی اشتراک‌گذاری کلیک کنید<br>
+            2. بله را انتخاب کنید<br>
+            3. تصویر را در چت ربات ارسال کنید
+        </div>
     </div>
 
     <script>
-        function log(msg, isError = false) {
-            const debugDiv = document.getElementById('debugLog');
-            const time = new Date().toLocaleTimeString();
-            const className = isError ? 'error' : 'success';
-            debugDiv.innerHTML += `<div class="${className}">[${time}] ${msg}</div>`;
-            debugDiv.scrollTop = debugDiv.scrollHeight;
-        }
-
-        function getImageData() {
-            const imageData = localStorage.getItem('digit_image');
-            if (!imageData) {
-                log('❌ تصویری در localStorage یافت نشد! ابتدا یک رقم بنویسید.', true);
-                return null;
-            }
-            log('✅ تصویر از localStorage خوانده شد');
-            return imageData;
-        }
-
-        function sendWithPostEvent(methodName, arg1, arg2 = null) {
-            try {
-                log(`📤 تلاش: ${methodName}(${JSON.stringify(arg1).substring(0, 50)}...)`);
-                if (arg2 !== null) {
-                    BaleWebApp.postEvent(arg1, arg2);
-                } else {
-                    BaleWebApp.postEvent(arg1);
-                }
-                log(`✅ ${methodName} اجرا شد - بدون خطا`, false);
-                return true;
-            } catch(e) {
-                log(`❌ ${methodName} خطا: ${e.message}`, true);
-                return false;
-            }
-        }
-
-        function testFormat1() {
-            log('=== تست فرمت 1: فقط داده ===');
-            const imageData = getImageData();
-            if (!imageData) return;
-            sendWithPostEvent('فرمت 1', imageData);
-        }
-
-        function testFormat2() {
-            log('=== تست فرمت 2: رویداد + داده ===');
-            const imageData = getImageData();
-            if (!imageData) return;
-            sendWithPostEvent('فرمت 2', 'digit_image', imageData);
-        }
-
-        function testFormat3() {
-            log('=== تست فرمت 3: send_data + داده ===');
-            const imageData = getImageData();
-            if (!imageData) return;
-            sendWithPostEvent('فرمت 3', 'send_data', imageData);
-        }
-
-        function testFormat4() {
-            log('=== تست فرمت 4: web_app_data + داده ===');
-            const imageData = getImageData();
-            if (!imageData) return;
-            sendWithPostEvent('فرمت 4', 'web_app_data', imageData);
-        }
-
-        function testFormat5() {
-            log('=== تست فرمت 5: داده + تابع برگشتی ===');
-            const imageData = getImageData();
-            if (!imageData) return;
-            try {
-                BaleWebApp.postEvent(imageData, function(response) {
-                    log(`پاسخ از WebView: ${JSON.stringify(response)}`);
-                });
-                log('✅ فرمت 5 اجرا شد');
-            } catch(e) {
-                log(`❌ فرمت 5 خطا: ${e.message}`, true);
-            }
-        }
-
-        // نمایش وضعیت اولیه
         window.onload = function() {
-            log('🔍 صفحه دیباگ loaded');
-            if (typeof BaleWebApp !== 'undefined') {
-                log('✅ BaleWebApp پیدا شد');
-                log(`📋 متدهای موجود: postEvent`);
-            } else {
-                log('❌ BaleWebApp پیدا نشد!', true);
-            }
-            
             const imageData = localStorage.getItem('digit_image');
             if (imageData) {
-                log('✅ تصویر در localStorage وجود دارد');
+                document.getElementById('preview').innerHTML = `<img src="${imageData}" alt="پیش‌نمایش">`;
+                document.getElementById('status').innerHTML = '✅ تصویر پیدا شد. روی دکمه اشتراک‌گذاری کلیک کنید.';
             } else {
-                log('⚠️ تصویری در localStorage یافت نشد. ابتدا یک رقم بنویسید.', true);
+                document.getElementById('status').innerHTML = '⚠️ هیچ تصویری ذخیره نشده است. ابتدا یک رقم بنویسید.';
             }
         };
+
+        function shareImage() {
+            const imageData = localStorage.getItem('digit_image');
+            if (!imageData) {
+                alert('❌ هیچ تصویری ذخیره نشده است!');
+                return;
+            }
+
+            // تبدیل base64 به blob
+            fetch(imageData)
+                .then(res => res.blob())
+                .then(blob => {
+                    const file = new File([blob], "digit.png", { type: "image/png" });
+                    
+                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            title: 'رقم دستنویس',
+                            text: 'رقمی که نوشتم',
+                            files: [file]
+                        }).then(() => {
+                            document.getElementById('status').innerHTML = '✅ تصویر ارسال شد! لطفاً آن را در چت ربات انتخاب کنید.';
+                        }).catch((e) => {
+                            if (e.name !== 'AbortError') {
+                                alert('خطا در اشتراک‌گذاری: ' + e.message);
+                            }
+                        });
+                    } else {
+                        // اگر اشتراک‌گذاری فایل پشتیبانی نمی‌شود، دانلود خودکار
+                        downloadImage();
+                    }
+                });
+        }
+
+        function downloadImage() {
+            const imageData = localStorage.getItem('digit_image');
+            if (!imageData) {
+                alert('❌ هیچ تصویری ذخیره نشده است!');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.download = 'digit.png';
+            link.href = imageData;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            document.getElementById('status').innerHTML = '✅ تصویر دانلود شد! لطفاً آن را در چت ربات ارسال کنید.';
+        }
     </script>
 </body>
 </html>
