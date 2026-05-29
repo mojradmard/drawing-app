@@ -185,100 +185,73 @@
         
 // ... (بقیه توابع مانند startDrawing, draw, clearCanvas به همان صورت باقی می‌مانند) ...
 
-// تابع برای شناسایی آبجکت WebView در بله
-        function findBaleWebView() {
-            // لیست نام‌های احتمالی برای WebView در بله
-            const possibleNames = [
-                'BaleWebView',
-                'BaleWebApp', 
-                'Bale',
-                'window.BaleWebView',
-                'webkit.messageHandlers',  // برای iOS
-                'BaleAndroid',             // برای Android
-                'BaleiOS'                  // برای iOS
-            ];
+// // تابع برای شناسایی آبجکت WebView در بله
+//         function findBaleWebView() {
+//             // لیست نام‌های احتمالی برای WebView در بله
+//             const possibleNames = [
+//                 'BaleWebView',
+//                 'BaleWebApp', 
+//                 'Bale',
+//                 'window.BaleWebView',
+//                 'webkit.messageHandlers',  // برای iOS
+//                 'BaleAndroid',             // برای Android
+//                 'BaleiOS'                  // برای iOS
+//             ];
             
-            // بررسی آبجکت‌های سراسری
-            if (typeof BaleWebApp !== 'undefined') return BaleWebApp;
-            if (typeof BaleWebView !== 'undefined') return BaleWebView;
-            if (typeof Bale !== 'undefined' && Bale.webView) return Bale.webView;
-            if (typeof Bale !== 'undefined') return Bale;
+//             // بررسی آبجکت‌های سراسری
+//             if (typeof BaleWebApp !== 'undefined') return BaleWebApp;
+//             if (typeof BaleWebView !== 'undefined') return BaleWebView;
+//             if (typeof Bale !== 'undefined' && Bale.webView) return Bale.webView;
+//             if (typeof Bale !== 'undefined') return Bale;
             
-            // بررسی window
-            if (window.BaleWebApp) return window.BaleWebApp;
-            if (window.BaleWebView) return window.BaleWebView;
-            if (window.Bale) return window.Bale;
+//             // بررسی window
+//             if (window.BaleWebApp) return window.BaleWebApp;
+//             if (window.BaleWebView) return window.BaleWebView;
+//             if (window.Bale) return window.Bale;
             
-            // بررسی messageHandlers (برای WebViewهای iOS)
-            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.baleWebView) {
-                return window.webkit.messageHandlers.baleWebView;
-            }
+//             // بررسی messageHandlers (برای WebViewهای iOS)
+//             if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.baleWebView) {
+//                 return window.webkit.messageHandlers.baleWebView;
+//             }
             
-            return null;
-        }
+//             return null;
+//         }
 
-        // نمایش وضعیت برای دیباگ
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('=== جستجوی WebView بله ===');
-            const webview = findBaleWebView();
-            if (webview) {
-                console.log('✅ WebView پیدا شد:', typeof webview);
-                console.log('متدهای موجود:', Object.keys(webview));
-            } else {
-                console.log('❌ WebView پیدا نشد');
-                console.log('تمام آبجکت‌های سراسری:', Object.keys(window));
-            }
-        });
+//         // نمایش وضعیت برای دیباگ
+//         window.addEventListener('DOMContentLoaded', function() {
+//             console.log('=== جستجوی WebView بله ===');
+//             const webview = findBaleWebView();
+//             if (webview) {
+//                 console.log('✅ WebView پیدا شد:', typeof webview);
+//                 console.log('متدهای موجود:', Object.keys(webview));
+//             } else {
+//                 console.log('❌ WebView پیدا نشد');
+//                 console.log('تمام آبجکت‌های سراسری:', Object.keys(window));
+//             }
+//         });
                 
         function submitDrawing() {
             const imageData = resizeCanvasImage();
             
-            // پیدا کردن WebView
-            const webview = findBaleWebView();
-            
-            if (webview) {
-                try {
-                    // نمایش متدهای موجود برای دیباگ
-                    console.log('متدهای webview:', Object.keys(webview));
-                    
-                    // روش‌های مختلف ارسال داده
-                    if (typeof webview.sendData === 'function') {
-                        webview.sendData(imageData);
-                    } 
-                    else if (typeof webview.postMessage === 'function') {
-                        webview.postMessage(imageData);
-                    }
-                    else if (typeof webview.send === 'function') {
-                        webview.send(imageData);
-                    }
-                    else if (webview.webView && typeof webview.webView.sendData === 'function') {
-                        webview.webView.sendData(imageData);
-                    }
-                    else {
-                        // اگر متد ارسال داده پیدا نشد
-                        console.error('هیچ متد ارسال داده‌ای پیدا نشد');
-                        alert('خطا: WebView پیدا شد اما متد ارسال داده وجود ندارد');
-                        return;
-                    }
-                    
-                    // تلاش برای بستن WebView
-                    setTimeout(() => {
-                        if (typeof webview.close === 'function') {
-                            webview.close();
-                        } else if (typeof webview.backButton === 'function') {
-                            webview.backButton();
-                        } else if (window.history.length > 1) {
-                            window.history.back();
-                        }
-                    }, 300);
-                    
-                } catch(e) {
-                    console.error('خطا در ارسال:', e);
-                    alert('خطا در ارسال رقم: ' + e.message);
+            // جستجوی متدهای جایگزین
+            if (typeof BaleWebView !== 'undefined') {
+                // روش‌های احتمالی ارسال داده در بله
+                if (typeof BaleWebView.postMessage === 'function') {
+                    BaleWebView.postMessage(imageData);
+                } else if (typeof BaleWebView.send === 'function') {
+                    BaleWebView.send(imageData);
+                } else if (typeof BaleWebView.onDataReceived !== 'undefined') {
+                    // برخی WebViewها از طریق رویدادها کار می‌کنند
+                    const event = new CustomEvent('baleData', { detail: imageData });
+                    window.dispatchEvent(event);
                 }
-            } else {
-                // اگر WebView پیدا نشد
-                alert('محیط WebView شناسایی نشد. لطفاً از طریق ربات بله وارد شوید.');
+                
+                // بستن WebView
+                setTimeout(() => {
+                    if (typeof BaleWebView.close === 'function') {
+                        BaleWebView.close();
+                    }
+                }, 500);
             }
         }
         
