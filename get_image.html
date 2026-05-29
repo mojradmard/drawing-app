@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>دریافت تصویر</title>
+    <title>ارسال تصویر به ربات</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -51,59 +51,52 @@
             border-radius: 8px;
             font-size: 12px;
         }
-        .note {
-            margin-top: 15px;
-            font-size: 12px;
-            color: #666;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>📥 دریافت تصویر ذخیره شده</h2>
-        <button onclick="getAndSendImage()">📥 دانلود تصویر</button>
+        <h2>📤 ارسال تصویر به ربات</h2>
+        <button onclick="sendToBot()">📤 ارسال خودکار به ربات</button>
         <div class="preview" id="preview"></div>
-        <div class="status" id="status">در انتظار اقدام شما...</div>
-        <div class="note">
-            ⚠️ پس از دانلود، لطفاً تصویر را در چت ربات ارسال کنید.
-        </div>
+        <div class="status" id="status">در حال آماده‌سازی...</div>
     </div>
 
     <script>
-        function getAndSendImage() {
-            const statusDiv = document.getElementById('status');
+        window.onload = function() {
             const imageData = localStorage.getItem('digit_image');
-            
+            if (imageData) {
+                document.getElementById('preview').innerHTML = `<img src="${imageData}" alt="پیش‌نمایش">`;
+                document.getElementById('status').innerHTML = '✅ تصویر پیدا شد. روی دکمه کلیک کنید.';
+            } else {
+                document.getElementById('status').innerHTML = '⚠️ هیچ تصویری ذخیره نشده است.';
+            }
+        };
+
+        function sendToBot() {
+            const imageData = localStorage.getItem('digit_image');
             if (!imageData) {
-                statusDiv.innerHTML = '❌ هیچ تصویری ذخیره نشده است! لطفاً ابتدا یک رقم بنویسید.';
-                alert('❌ هیچ تصویری ذخیره نشده است! لطفاً ابتدا روی ✍️ نوشتن رقم کلیک کنید و یک عدد بنویسید.');
+                alert('❌ هیچ تصویری ذخیره نشده است!');
                 return;
             }
-            
-            // نمایش پیش‌نمایش
-            const preview = document.getElementById('preview');
-            preview.innerHTML = `<img src="${imageData}" alt="پیش‌نمایش">`;
-            
-            statusDiv.innerHTML = '✅ تصویر پیدا شد. در حال دانلود...';
-            
-            // دانلود تصویر
-            const link = document.createElement('a');
-            link.download = 'digit.png';
-            link.href = imageData;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            statusDiv.innerHTML = '✅ تصویر دانلود شد! لطفاً آن را در چت ربات ارسال کنید.';
-            
-            // بستن خودکار صفحه بعد از 3 ثانیه
-            setTimeout(() => {
-                if (typeof BaleWebApp !== 'undefined' && typeof BaleWebApp.close === 'function') {
-                    BaleWebApp.close();
-                } else if (typeof window.close === 'function') {
-                    window.close();
+
+            if (typeof BaleWebApp !== 'undefined') {
+                try {
+                    // ارسال داده به ربات
+                    BaleWebApp.sendData(JSON.stringify({
+                        type: 'digit_image',
+                        data: imageData
+                    }));
+                    document.getElementById('status').innerHTML = '✅ تصویر ارسال شد! صفحه بسته می‌شود.';
+                    // بستن WebView پس از 1 ثانیه
+                    setTimeout(() => {
+                        if (typeof BaleWebApp.close === 'function') BaleWebApp.close();
+                    }, 1000);
+                } catch(e) {
+                    alert('خطا در ارسال: ' + e.message);
                 }
-            }, 3000);
+            } else {
+                alert('محیط WebView شناسایی نشد. لطفاً از ربات استفاده کنید.');
+            }
         }
     </script>
 </body>
