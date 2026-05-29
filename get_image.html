@@ -41,6 +41,14 @@
             border: 1px solid #ddd;
             border-radius: 8px;
         }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e0e0e0;
+            border-radius: 8px;
+            font-size: 12px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -48,39 +56,67 @@
         <h2>📥 دریافت تصویر ذخیره شده</h2>
         <button onclick="getAndSendImage()">📤 ارسال تصویر به ربات</button>
         <div class="preview" id="preview"></div>
+        <div class="status" id="status">در انتظار اقدام شما...</div>
     </div>
 
     <script>
         function getAndSendImage() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = 'در حال خواندن تصویر از حافظه...';
+            
             // خواندن تصویر از localStorage
             const imageData = localStorage.getItem('digit_image');
             
             if (!imageData) {
+                statusDiv.innerHTML = '❌ هیچ تصویری ذخیره نشده است! لطفاً ابتدا یک رقم بنویسید.';
                 alert('❌ هیچ تصویری ذخیره نشده است! لطفاً ابتدا یک رقم بنویسید.');
                 return;
             }
+            
+            statusDiv.innerHTML = '✅ تصویر پیدا شد. در حال ارسال به ربات...';
             
             // نمایش پیش‌نمایش
             const preview = document.getElementById('preview');
             preview.innerHTML = `<img src="${imageData}" alt="پیش‌نمایش">`;
             
-            // ارسال به ربات
+            // ارسال به ربات - روش‌های مختلف را امتحان می‌کنیم
+            
+            // روش 1: استفاده از BaleWebApp
             if (typeof BaleWebApp !== 'undefined') {
-                BaleWebApp.sendData(JSON.stringify({
-                    image: imageData
-                }));
-                
-                alert('✅ تصویر به ربات ارسال شد!');
-                
-                // بستن WebView
-                setTimeout(() => {
-                    if (typeof BaleWebApp.close === 'function') {
-                        BaleWebApp.close();
-                    }
-                }, 500);
-            } else {
-                alert('در حال ارسال... (محیط WebView شناسایی نشد)');
-                console.log('Image data:', imageData.substring(0, 100));
+                try {
+                    // ارسال داده به صورت JSON
+                    const payload = JSON.stringify({
+                        type: 'digit_image',
+                        data: imageData
+                    });
+                    
+                    BaleWebApp.sendData(payload);
+                    statusDiv.innerHTML = '✅ داده ارسال شد (روش BaleWebApp)! در حال بستن صفحه...';
+                    
+                    // بستن خودکار صفحه
+                    setTimeout(() => {
+                        if (typeof BaleWebApp.close === 'function') {
+                            BaleWebApp.close();
+                        }
+                    }, 1000);
+                    
+                } catch(e) {
+                    statusDiv.innerHTML = '❌ خطا در ارسال: ' + e.message;
+                }
+            }
+            // روش 2: استفاده از Bale
+            else if (typeof Bale !== 'undefined' && Bale.webView) {
+                try {
+                    Bale.webView.sendData(JSON.stringify({ image: imageData }));
+                    statusDiv.innerHTML = '✅ داده ارسال شد (روش Bale.webView)!';
+                    setTimeout(() => { Bale.webView.close(); }, 1000);
+                } catch(e) {
+                    statusDiv.innerHTML = '❌ خطا: ' + e.message;
+                }
+            }
+            else {
+                statusDiv.innerHTML = '❌ محیط WebView شناسایی نشد. لطفاً از داخل ربات استفاده کنید.';
+                alert('لطفاً از داخل ربات بله استفاده کنید.');
             }
         }
     </script>
