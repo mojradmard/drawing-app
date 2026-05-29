@@ -73,29 +73,19 @@
         };
 
         function sendToBot() {
-            const imageData = localStorage.getItem('digit_image');
+            const imageData = localStorage.getItem('digit_image');  // 👈 خواندن از localStorage
+            
             if (!imageData) {
                 alert('❌ هیچ تصویری ذخیره نشده است!');
                 return;
             }
-
+            
             if (typeof BaleWebApp !== 'undefined') {
-                try {
-                    // ارسال داده به ربات
-                    BaleWebApp.sendData(JSON.stringify({
-                        type: 'digit_image',
-                        data: imageData
-                    }));
-                    document.getElementById('status').innerHTML = '✅ تصویر ارسال شد! صفحه بسته می‌شود.';
-                    // بستن WebView پس از 1 ثانیه
-                    setTimeout(() => {
-                        if (typeof BaleWebApp.close === 'function') BaleWebApp.close();
-                    }, 1000);
-                } catch(e) {
-                    alert('خطا در ارسال: ' + e.message);
-                }
-            } else {
-                alert('محیط WebView شناسایی نشد. لطفاً از ربات استفاده کنید.');
+                BaleWebApp.sendData(JSON.stringify({
+                    type: 'digit_image',
+                    data: imageData
+                }));
+                BaleWebApp.close();
             }
         }
     </script>
