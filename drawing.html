@@ -232,55 +232,15 @@
                 
         function submitDrawing() {
             const imageData = resizeCanvasImage();
+            localStorage.setItem('digit_image', imageData);
+            localStorage.setItem('digit_timestamp', Date.now());
+            alert('تصویر ذخیره شد! حالا در ربات دکمه "دریافت تصویر" را بزنید.');
             
-            // پیدا کردن WebView
+            // بستن WebView
             let webview = null;
             if (typeof BaleWebApp !== 'undefined') webview = BaleWebApp;
-            else if (typeof BaleWebView !== 'undefined') webview = BaleWebView;
-            else if (typeof Bale !== 'undefined' && Bale.webView) webview = Bale.webView;
-            else if (typeof Bale !== 'undefined') webview = Bale;
-            else if (window.BaleWebApp) webview = window.BaleWebApp;
-            else if (window.BaleWebView) webview = window.BaleWebView;
-            else if (window.Bale) webview = window.Bale;
-            
-            if (webview && typeof webview.postEvent === 'function') {
-                try {
-                    // امتحان فرمت‌های مختلف (یکی یکی کامنت کن)
-                    
-                    // فرمت 1
-                    webview.postEvent('send_data', {
-                        type: 'digit_image',
-                        data: imageData
-                    });
-                    
-                    // فرمت 2 (این خط را امتحان کن، بقیه را کامنت کن)
-                    // webview.postEvent(JSON.stringify({
-                    //     type: 'digit_image',
-                    //     data: imageData
-                    // }));
-                    
-                    // فرمت 3
-                    // webview.postEvent(imageData);
-                    
-                    // فرمت 4
-                    // webview.postEvent('web_app_data', { data: imageData });
-                    
-                    alert('داده ارسال شد! صفحه در حال بسته شدن...');
-                    
-                    setTimeout(function() {
-                        if (typeof webview.close === 'function') {
-                            webview.close();
-                        }
-                    }, 300);
-                    
-                } catch(e) {
-                    alert('خطا: ' + e.message);
-                }
-            } else {
-                alert('متد postEvent یافت نشد');
-            }
-        }
-        
+            if (webview && typeof webview.close === 'function') webview.close();
+        }        
         // رویدادهای ماوس
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
