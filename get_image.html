@@ -5,52 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>ارسال تصویر به ربات</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            padding: 20px;
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 10px;
-            width: 80%;
-        }
-        .preview {
-            margin-top: 20px;
-            max-width: 100%;
-        }
-        img {
-            max-width: 200px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .status {
-            margin-top: 10px;
-            padding: 10px;
-            background: #e0e0e0;
-            border-radius: 8px;
-            font-size: 12px;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; margin: 0; }
+        .container { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 20px; text-align: center; max-width: 400px; width: 100%; }
+        button { padding: 15px 30px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px; width: 80%; }
+        .preview { margin-top: 20px; max-width: 100%; }
+        img { max-width: 200px; border: 1px solid #ddd; border-radius: 8px; }
+        .status { margin-top: 10px; padding: 10px; background: #e0e0e0; border-radius: 8px; font-size: 12px; word-break: break-all; }
+        .error { background: #ffcccc; color: red; }
+        .success { background: #ccffcc; color: green; }
     </style>
 </head>
 <body>
@@ -62,30 +24,79 @@
     </div>
 
     <script>
+        // نمایش وضعیت WebView هنگام بارگذاری صفحه
         window.onload = function() {
+            const statusDiv = document.getElementById('status');
+            
+            // بررسی وجود BaleWebApp
+            if (typeof BaleWebApp !== 'undefined') {
+                statusDiv.innerHTML = '✅ WebView بله شناسایی شد! آماده ارسال.';
+                statusDiv.className = 'status success';
+            } else {
+                statusDiv.innerHTML = '❌ WebView بله شناسایی نشد! لطفاً از داخل ربات استفاده کنید.';
+                statusDiv.className = 'status error';
+            }
+            
+            // خواندن تصویر از localStorage
             const imageData = localStorage.getItem('digit_image');
             if (imageData) {
                 document.getElementById('preview').innerHTML = `<img src="${imageData}" alt="پیش‌نمایش">`;
-                document.getElementById('status').innerHTML = '✅ تصویر پیدا شد. روی دکمه کلیک کنید.';
+                statusDiv.innerHTML += '<br>✅ تصویر پیدا شد. روی دکمه کلیک کنید.';
             } else {
-                document.getElementById('status').innerHTML = '⚠️ هیچ تصویری ذخیره نشده است.';
+                statusDiv.innerHTML += '<br>⚠️ هیچ تصویری ذخیره نشده است. ابتدا یک رقم بنویسید.';
             }
         };
 
         function sendToBot() {
-            const imageData = localStorage.getItem('digit_image');  // 👈 خواندن از localStorage
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '🔄 در حال ارسال...';
             
+            // 1. خواندن تصویر از localStorage
+            const imageData = localStorage.getItem('digit_image');
             if (!imageData) {
+                statusDiv.innerHTML = '❌ هیچ تصویری ذخیره نشده است!';
+                statusDiv.className = 'status error';
                 alert('❌ هیچ تصویری ذخیره نشده است!');
                 return;
             }
             
-            if (typeof BaleWebApp !== 'undefined') {
-                BaleWebApp.sendData(JSON.stringify({
+            // 2. بررسی وجود BaleWebApp
+            if (typeof BaleWebApp === 'undefined') {
+                statusDiv.innerHTML = '❌ WebView بله شناسایی نشد!';
+                statusDiv.className = 'status error';
+                alert('❌ محیط WebView شناسایی نشد. لطفاً از داخل ربات بله استفاده کنید.');
+                return;
+            }
+            
+            // 3. ارسال داده
+            try {
+                const payload = JSON.stringify({
                     type: 'digit_image',
                     data: imageData
-                }));
-                BaleWebApp.close();
+                });
+                
+                console.log('در حال ارسال داده:', payload.substring(0, 100));
+                statusDiv.innerHTML = '📤 در حال ارسال به ربات...';
+                
+                // ارسال داده به ربات
+                BaleWebApp.sendData(payload);
+                
+                statusDiv.innerHTML = '✅ داده ارسال شد! صفحه در حال بسته شدن...';
+                statusDiv.className = 'status success';
+                
+                // بستن WebView پس از 1 ثانیه
+                setTimeout(() => {
+                    if (typeof BaleWebApp.close === 'function') {
+                        BaleWebApp.close();
+                    } else {
+                        statusDiv.innerHTML += '<br>⚠️ لطفاً صفحه را دستی ببندید.';
+                    }
+                }, 1000);
+                
+            } catch(e) {
+                statusDiv.innerHTML = '❌ خطا در ارسال: ' + e.message;
+                statusDiv.className = 'status error';
+                alert('خطا در ارسال: ' + e.message);
             }
         }
     </script>
