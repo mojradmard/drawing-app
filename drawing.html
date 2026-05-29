@@ -188,31 +188,71 @@
         function submitDrawing() {
             const imageData = resizeCanvasImage();
             
-            // بررسی اینکه آیا در محیط WebView بله هستیم
-            if (typeof BaleWebApp !== 'undefined' && BaleWebApp) {
+            // بررسی روش‌های مختلف ارسال داده در بله
+            if (typeof Bale !== 'undefined' && Bale.webView) {
+                // روش اول: استفاده از Bale.webView
                 try {
-                    // ارسال داده به ربات بله
+                    Bale.webView.sendData(JSON.stringify({
+                        type: 'digit_image',
+                        data: imageData
+                    }));
+                    Bale.webView.close();
+                } catch(e) {
+                    console.error('خطا در ارسال با Bale.webView:', e);
+                    fallbackSubmit(imageData);
+                }
+            } 
+            else if (typeof BaleWebApp !== 'undefined') {
+                // روش دوم: استفاده از BaleWebApp (اگر وجود داشته باشد)
+                try {
                     BaleWebApp.sendData(JSON.stringify({
                         type: 'digit_image',
                         data: imageData
                     }));
-                    
-                    // بستن WebView بعد از ارسال داده
-                    // ممکن است نیاز به تاخیر جزئی باشد تا داده حتماً ارسال شود
-                    setTimeout(function() {
-                        if (typeof BaleWebApp.close === 'function') {
-                            BaleWebApp.close();
-                        }
-                    }, 100);
-                    
+                    if (typeof BaleWebApp.close === 'function') {
+                        BaleWebApp.close();
+                    }
                 } catch(e) {
-                    console.error('خطا در ارسال داده:', e);
-                    alert('خطا در ارسال رقم. لطفاً دوباره تلاش کنید.');
+                    console.error('خطا در ارسال با BaleWebApp:', e);
+                    fallbackSubmit(imageData);
                 }
-            } else {
-                // اگر در محیط تست (مرورگر معمولی) هستیم
-                alert('لطفاً از داخل ربات بله استفاده کنید. داده آماده ارسال است');
-                console.log('Data to send:', imageData);
+            }
+            else if (typeof window.BaleWebApp !== 'undefined') {
+                // روش سوم: برای تلگرام (فال‌بک)
+                try {
+                    window.BaleWebApp.sendData(JSON.stringify({
+                        type: 'digit_image',
+                        data: imageData
+                    }));
+                    window.BaleWebApp.close();
+                } catch(e) {
+                    console.error('خطا در ارسال با BaleWebApp:', e);
+                    fallbackSubmit(imageData);
+                }
+            }
+            else {
+                // اگر هیچکدام وجود نداشت
+                fallbackSubmit(imageData);
+            }
+        }
+        
+        function fallbackSubmit(imageData) {
+            // روش جایگزین: ذخیره داده در localStorage و دادن لینک به کاربر
+            try {
+                localStorage.setItem('pending_digit_image', imageData);
+                alert('تصویر ذخیره شد. لطفاً به ربات برگردید و دکمه "تایید" را بزنید.');
+                
+                // تلاش برای بستن با روش‌های مختلف
+                if (typeof Bale !== 'undefined' && Bale.webView && typeof Bale.webView.close === 'function') {
+                    Bale.webView.close();
+                } else if (typeof BaleWebApp !== 'undefined' && typeof BaleWebApp.close === 'function') {
+                    BaleWebApp.close();
+                } else if (typeof window.close === 'function') {
+                    window.close();
+                }
+            } catch(e) {
+                console.error('خطا در fallback:', e);
+                alert('خطا در ارسال رقم. لطفاً از تصویر ذخیره شده استفاده کنید.');
             }
         }
         
